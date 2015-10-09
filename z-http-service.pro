@@ -20,3 +20,9 @@ SOURCES += main.cpp \
 
 HEADERS += \
     zhttpserver.h
+
+DESTDIR         = $$_PRO_FILE_PWD_/
+
+target.path = /usr/bin/
+
+INSTALLS += target
