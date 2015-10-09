@@ -1,4 +1,6 @@
 #include <QCoreApplication>
+#include <QTcpSocket>
+#include <QHostAddress>
 
 #include "zhttpserver.h"
 
