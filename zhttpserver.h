@@ -27,6 +27,7 @@ private:
 
     QByteArray messagePackage(QString content, const QString &content_type = "text/html",
                            ErrorCode error_code = NoError, const QString &error_message = "") const;
+    QString getErrorHtml(ErrorCode error_code, const QString &error_message) const;
 };
 
 #endif // ZHTTPSERVER_H

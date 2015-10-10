@@ -90,17 +90,20 @@ QByteArray ZHttpServer::messagePackage(QString content, const QString &content_t
     QString message;
 
     if(error_code != NoError)
-        content = content.append("\r\n%1 %2").arg(error_code).arg(error_message);
+        content = getErrorHtml(error_code, error_message);
 
     message = message.append("HTTP/1.1 %1 %2\r\n").arg(error_code).arg(error_message);
     message = message.append("Content-Type: %1\r\n").arg(content_type);
     message = message.append("Content-Length: %1\r\n").arg(content.length());
-    message = message.append("Connection: Close\r\nServer: %1\r\n").arg(SERVERNAME);
+    message = message.append("Connection: Close\r\n");
 
     if(!content.isEmpty())
         message = message.append("\r\n%1").arg(content);
 
-    qDebug() << message;
-
     return message.toUtf8();
+}
+
+QString ZHttpServer::getErrorHtml(ErrorCode error_code, const QString &error_message) const
+{
+    return QString("<html><head><title>%1 %2</title></head><body bgcolor=\"white\"><center><h1>%1 %2</h1></center><hr></body></html>").arg(error_code).arg(error_message);
 }
