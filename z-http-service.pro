@@ -25,7 +25,7 @@ HEADERS += \
 OTHER_FILES += z-http.service
 
 service.path = /etc/systemd/system/
-service.file = z-http.service
+service.files = z-http.service
 
 target.path = /usr/bin/
 
