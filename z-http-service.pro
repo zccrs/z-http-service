@@ -22,8 +22,11 @@ HEADERS += \
     zhttpserver.h
 
 #DESTDIR         = $$_PRO_FILE_PWD_/
+OTHER_FILES += z-http.service
 
+service.path = /etc/systemd/system/
+service.file = z-http.service
 
 target.path = /usr/bin/
 
-INSTALLS += target
+INSTALLS += target service

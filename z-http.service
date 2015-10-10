@@ -1,0 +1,12 @@
+[Unit]
+Description=autostart script
+After=network.target
+ConditionPathExists=/usr/bin/z-http-service
+[Service]
+Type=forking
+ExecStart=/usr/bin/sh /usr/bin/z-http-service
+TimeoutSec=0
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
+
