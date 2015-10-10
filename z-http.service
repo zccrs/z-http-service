@@ -1,12 +1,11 @@
 [Unit]
-Description=autostart script
+Description=z-http service
 After=network.target
-ConditionPathExists=/usr/bin/z-http-service
+ConditionPathExists=/
 [Service]
-Type=oneshot
-ExecStart=/usr/bin/sh /usr/bin/z-http-service
+Type=simple
+ExecStart=/usr/bin/z-http-service
 TimeoutSec=0
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
-
