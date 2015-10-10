@@ -41,11 +41,6 @@ bool ZHttpServer::startServer()
             QByteArray command = path_and_command == file_path ? "" : path_and_command.split('?').last();
             QFileInfo fileInfo(datapath + file_path);
 
-            if(!fileInfo.exists()){
-                socket->write(messagePackage("", "text/html",  FileNotFoundError, "File Not Found"));
-                return;
-            }
-
             if(!fileInfo.absoluteFilePath().contains(datapath)){
                 socket->write(messagePackage("", "text/html",  UnauthorizedAccessError, "Unauthorized Access"));
                 return;
@@ -61,12 +56,17 @@ bool ZHttpServer::startServer()
                 file.setFileName(fileInfo.filePath().append("default.html"));
             }
 
-            qDebug() << "TcpSocket: open file path:" << file.fileName();
+            qDebug() << "Open file:" << file.fileName();
+
+            if(!file.exists()){
+                socket->write(messagePackage("", "text/html",  FileNotFoundError, "File Not Found"));
+                return;
+            }
 
             if(file.open(QIODevice::ReadOnly)){
                 socket->write(messagePackage(file.readAll()));
             }else{
-                qDebug() << "TcpSocket: open file " << file.fileName() << "error:" << file.errorString();
+                qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
                 socket->write(messagePackage("", "text/html", OtherError, file.errorString()));
             }
 
