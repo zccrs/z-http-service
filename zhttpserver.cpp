@@ -41,6 +41,8 @@ bool ZHttpServer::startServer()
             QByteArray command = path_and_command == file_path ? "" : path_and_command.split('?').last();
             QFileInfo fileInfo(datapath + file_path);
 
+            qDebug() << "Open file:" << fileInfo.absoluteFilePath();
+
             if(!fileInfo.absoluteFilePath().contains(datapath)){
                 socket->write(messagePackage("", "text/html",  UnauthorizedAccessError, "Unauthorized Access"));
                 return;
@@ -55,8 +57,6 @@ bool ZHttpServer::startServer()
             }else if(fileInfo.isDir()){
                 file.setFileName(fileInfo.filePath().append("default.html"));
             }
-
-            qDebug() << "Open file:" << file.fileName();
 
             if(!file.exists()){
                 socket->write(messagePackage("", "text/html",  FileNotFoundError, "File Not Found"));
