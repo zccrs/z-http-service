@@ -9,6 +9,8 @@
 
 #define SERVERNAME "z-http"
 
+const QString datapath = QDir::homePath() + "/.z-http/data";
+
 ZHttpServer::ZHttpServer(QObject *parent) :
     QObject(parent),
     m_tcpServer(new QTcpServer(this))
@@ -37,14 +39,14 @@ bool ZHttpServer::startServer()
             QByteArray path_and_command = socket->readAll().split('\r').first().split(' ')[1];
             QByteArray file_path = path_and_command.split('?').first();
             QByteArray command = path_and_command == file_path ? "" : path_and_command.split('?').last();
-            QFileInfo fileInfo(QDir::homePath() + "/.websocket-service/data"+file_path);
+            QFileInfo fileInfo(datapath + file_path);
 
             if(!fileInfo.exists()){
                 socket->write(messagePackage("", "text/html",  FileNotFoundError, "File Not Found"));
                 return;
             }
 
-            if(!fileInfo.absoluteFilePath().contains(QDir::homePath() + "/.websocket-service/data/")){
+            if(!fileInfo.absoluteFilePath().contains(datapath)){
                 socket->write(messagePackage("", "text/html",  UnauthorizedAccessError, "Unauthorized Access"));
                 return;
             }
