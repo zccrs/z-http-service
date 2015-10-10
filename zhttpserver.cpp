@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QStandardPaths>
 #include <QDebug>
 
 #include "zhttpserver.h"
@@ -15,7 +16,7 @@ ZHttpServer::ZHttpServer(QObject *parent) :
     QObject(parent),
     m_tcpServer(new QTcpServer(this))
 {
-
+    qDebug() << QString(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 }
 
 ZHttpServer::~ZHttpServer()
