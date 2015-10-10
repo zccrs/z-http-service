@@ -10,13 +10,14 @@
 
 #define SERVERNAME "z-http"
 
-const QString datapath = QDir::homePath() + "/.z-http/data";
+const QString datapath = QDir::homePath().isEmpty() || QDir::homePath() == "/"
+        ? "/root/."+QString(SERVERNAME)+"/data"
+        : QDir::homePath() + "/."+QString(SERVERNAME)+"/data";
 
 ZHttpServer::ZHttpServer(QObject *parent) :
     QObject(parent),
     m_tcpServer(new QTcpServer(this))
 {
-    qDebug() << QString(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 }
 
 ZHttpServer::~ZHttpServer()
