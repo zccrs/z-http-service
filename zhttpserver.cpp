@@ -212,12 +212,14 @@ bool ZHttpServer::startServer()
                 if(fileInfo.isFile()){
                     file.setFileName(fileInfo.absoluteFilePath());
                 }else if(fileInfo.isDir()){
-                    QSettings setting(fileInfo.absolutePath().append("/.config"));
+                    QSettings setting(fileInfo.absoluteFilePath().append("/.ini"), QSettings::IniFormat);
                     QString jump = setting.value("jump").toString();
+
                     if(jump.isEmpty()){
-                        file.setFileName(fileInfo.absolutePath().append("/" + setting.value("default", "default.html").toString()));
+                        file.setFileName(fileInfo.absoluteFilePath().append("/" + setting.value("default", "default.html").toString()));
                     }else{
-                        QDir dir = fileInfo.dir();
+                        QDir dir(fileInfo.absoluteFilePath());
+
                         if(dir.cd(jump)){
                             info.url().setPath(dir.absolutePath().replace(datapath, ""));
                             socket->write(getJumpPackage(info.url().toString().toUtf8()));
