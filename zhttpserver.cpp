@@ -215,7 +215,7 @@ bool ZHttpServer::startServer()
                     QSettings setting(fileInfo.absolutePath().append("/.config"));
                     QString jump = setting.value("jump").toString();
                     if(jump.isEmpty()){
-                        file.setFileName(fileInfo.absolutePath().append(setting.value("/" + default", "default.html").toString()));
+                        file.setFileName(fileInfo.absolutePath().append(setting.value("/" + "default", "default.html").toString()));
                     }else{
                         QDir dir = fileInfo.dir();
                         if(dir.cd(jump)){
