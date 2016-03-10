@@ -345,7 +345,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 
     connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
             this, [this, socket, process, command] {
-        qDebug() << QString("Exec \"%1\" failed:").arg(command) << process->errorString();
+        qDebug() << QString("Exec \"%1\" failed:").arg(sysroot + COMMAND_PATH + "/" + command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
         socket->close();
@@ -354,7 +354,11 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 
     connect(process, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
             this, [this, socket, process] {
-        socket->write(messagePackage("", "text/html", HttpInfo::NoError, process->readAll()));
+        const QByteArray &message = process->readAll();
+
+        qDebug() << "execProcess finished, message:" << message;
+
+        socket->write(messagePackage(message));
         socket->close();
         onProcessFinished(process);
     });
