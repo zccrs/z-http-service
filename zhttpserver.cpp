@@ -307,7 +307,7 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
             QString jump = setting.value("jump").toString();
 
             if(jump.isEmpty()){
-                file.setFileName(fileInfo.absoluteFilePath().append("/" + setting.value("default", "default.html").toString()));
+                file.setFileName(fileInfo.absoluteFilePath().append(setting.value("default", "default.html").toString()));
             }else{
                 QDir dir(fileInfo.absoluteFilePath());
 
