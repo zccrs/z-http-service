@@ -359,6 +359,6 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
         onProcessFinished(process);
     });
 
-    process->start(command, QProcess::ReadOnly);
+    process->start(sysroot + COMMAND_PATH + "/" + command, QProcess::ReadOnly);
 }
 
