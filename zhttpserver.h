@@ -5,6 +5,8 @@
 #include <QMap>
 #include <QUrl>
 
+QT_USE_NAMESPACE
+
 class HttpInfo
 {
 public:
@@ -62,7 +64,14 @@ private:
     QByteArray toByteArray() const;
 };
 
+QT_BEGIN_NAMESPACE
+
 class QTcpServer;
+class QTcpSocket;
+class QProcess;
+
+QT_END_NAMESPACE
+
 class ZHttpServer : public QObject
 {
     Q_OBJECT
@@ -73,6 +82,9 @@ public:
     bool startServer();
     void stopServer();
 
+private slots:
+    void onProcessFinished(QProcess *process) const;
+
 private:
     QTcpServer *m_tcpServer;
 
@@ -80,6 +92,9 @@ private:
                            HttpInfo::ErrorCode error_code = HttpInfo::NoError, const QString &error_message = "") const;
     QByteArray getErrorHtml(HttpInfo::ErrorCode error_code, const QString &error_message) const;
     QByteArray getJumpPackage(const QByteArray &target_path) const;
+
+    void readFile(QUrl url, QTcpSocket *socket) const;
+    void execProcess(const QString &command, QTcpSocket *socket) const;
 };
 
 #endif // ZHTTPSERVER_H

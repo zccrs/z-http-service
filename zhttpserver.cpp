@@ -6,13 +6,18 @@
 #include <QStandardPaths>
 #include <QSettings>
 #include <QDebug>
+#include <QProcess>
 
 #include "zhttpserver.h"
 
 #define SERVERNAME "z-http"
 #define PORT 80
+#define ACTION "action"
+#define ACTION_EXEC "exec"
+#define COMMAND "command"
+#define COMMAND_PATH "/bin"
 
-const QString datapath = QDir::homePath().isEmpty() || QDir::homePath() == "/"
+const QString sysroot = QDir::homePath().isEmpty() || QDir::homePath() == "/"
         ? "/root/."+QString(SERVERNAME)+"/data"
         : QDir::homePath() + "/."+QString(SERVERNAME)+"/data";
 
@@ -196,55 +201,35 @@ bool ZHttpServer::startServer()
 
             qDebug() << info.url();
 
-            QByteArray command = info.url().query().toUtf8();
-            QFileInfo fileInfo(datapath + info.url().path());
+            const QByteArray &query = info.url().query().toUtf8();
+            QMap<QByteArray, QByteArray> command_map;
 
-            qDebug() << "HttpServer: command:" << command.split('&');
+            if(!query.isEmpty()) {
+                QByteArrayList commands = query.split('&');
 
-            do{
-                if(!fileInfo.absoluteFilePath().contains(datapath)){
-                    socket->write(messagePackage("", "text/html",  HttpInfo::UnauthorizedAccessError, "Unauthorized Access"));
-                    break;
-                }
+                qDebug() << "HttpServer: command:" << commands;
 
-                QFile file;
+                for(const QByteArray &comm : commands) {
+                    if(comm.isEmpty())
+                        continue;
 
-                if(fileInfo.isFile()){
-                    file.setFileName(fileInfo.absoluteFilePath());
-                }else if(fileInfo.isDir()){
-                    QSettings setting(fileInfo.absoluteFilePath().append("/.ini"), QSettings::IniFormat);
-                    QString jump = setting.value("jump").toString();
+                    const QByteArrayList &tmp_list = comm.split('=');
 
-                    if(jump.isEmpty()){
-                        file.setFileName(fileInfo.absoluteFilePath().append("/" + setting.value("default", "default.html").toString()));
-                    }else{
-                        QDir dir(fileInfo.absoluteFilePath());
-
-                        if(dir.cd(jump)){
-                            info.url().setPath(dir.absolutePath().replace(datapath, ""));
-                            socket->write(getJumpPackage(info.url().toString().toUtf8()));
-                            break;
-                        }else{
-                            socket->write(messagePackage("", "text/Html", HttpInfo::UnknowError, QString("Jump to %1 failed").arg(jump)));
-                            break;
-                        }
+                    if(tmp_list.count() != 2 || tmp_list.first().isEmpty()) {
+                        socket->write(messagePackage("", "text/Html", HttpInfo::BadRequest, QString("Grammatical errors: \"%1\"").arg(QString(comm))));
+                        socket->close();
+                        return;
                     }
-                }
 
-                qDebug() << "Open file:" << file.fileName();
-
-                if(!file.exists()){
-                    socket->write(messagePackage("", "text/html",  HttpInfo::FileNotFoundError, "File Not Found"));
-                    break;
+                    command_map[tmp_list.first()] = tmp_list.last();
                 }
+            }
 
-                if(file.open(QIODevice::ReadOnly)){
-                    socket->write(messagePackage(file.readAll()));
-                }else{
-                    qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
-                    socket->write(messagePackage("", "text/html", HttpInfo::OtherError, file.errorString()));
-                }
-            }while(false);
+            if(command_map.value(ACTION) == ACTION_EXEC) {
+                execProcess(command_map.value(COMMAND), socket);
+            } else {
+                readFile(info.url(), socket);
+            }
 
             socket->close();
         });
@@ -260,6 +245,13 @@ bool ZHttpServer::startServer()
 void ZHttpServer::stopServer()
 {
     m_tcpServer->close();
+}
+
+void ZHttpServer::onProcessFinished(QProcess *process) const
+{
+    process->terminate();
+    process->kill();
+    process->deleteLater();
 }
 
 QByteArray ZHttpServer::messagePackage(QByteArray content, const QByteArray &content_type,
@@ -294,5 +286,78 @@ QByteArray ZHttpServer::getJumpPackage(const QByteArray &target_path) const
     re.setRawHeader("Location", target_path);
 
     return re.toReplyByteArray();
+}
+
+void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
+{
+    QFileInfo fileInfo(sysroot + url.path());
+
+    do{
+        if(!fileInfo.absoluteFilePath().contains(sysroot)){
+            socket->write(messagePackage("", "text/html",  HttpInfo::UnauthorizedAccessError, "Unauthorized Access"));
+            break;
+        }
+
+        QFile file;
+
+        if(fileInfo.isFile()){
+            file.setFileName(fileInfo.absoluteFilePath());
+        }else if(fileInfo.isDir()){
+            QSettings setting(fileInfo.absoluteFilePath().append("/.ini"), QSettings::IniFormat);
+            QString jump = setting.value("jump").toString();
+
+            if(jump.isEmpty()){
+                file.setFileName(fileInfo.absoluteFilePath().append("/" + setting.value("default", "default.html").toString()));
+            }else{
+                QDir dir(fileInfo.absoluteFilePath());
+
+                if(dir.cd(jump)){
+                    url.setPath(dir.absolutePath().replace(sysroot, ""));
+                    socket->write(getJumpPackage(url.toString().toUtf8()));
+                    break;
+                }else{
+                    socket->write(messagePackage("", "text/Html", HttpInfo::UnknowError, QString("Jump to %1 failed").arg(jump)));
+                    break;
+                }
+            }
+        }
+
+        qDebug() << "Open file:" << file.fileName();
+
+        if(!file.exists()){
+            socket->write(messagePackage("", "text/html",  HttpInfo::FileNotFoundError, "File Not Found"));
+            break;
+        }
+
+        if(file.open(QIODevice::ReadOnly)){
+            socket->write(messagePackage(file.readAll()));
+        }else{
+            qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
+            socket->write(messagePackage("", "text/html", HttpInfo::OtherError, file.errorString()));
+        }
+    }while(false);
+}
+
+void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
+{
+    qDebug() << "execProcess:" << command;
+
+    QProcess *process = new QProcess(const_cast<ZHttpServer*>(this));
+
+    connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
+            this, [this, socket, process, command] {
+        qDebug() << QString("Exec \"%1\" failed:").arg(command) << process->errorString();
+
+        socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
+        onProcessFinished(process);
+    });
+
+    connect(process, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
+            this, [this, socket, process] {
+        socket->write(messagePackage("", "text/html", HttpInfo::NoError, process->readAll()));
+        onProcessFinished(process);
+    });
+
+    process->start(command, QProcess::ReadOnly);
 }
 
