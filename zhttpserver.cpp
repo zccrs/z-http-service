@@ -229,9 +229,8 @@ bool ZHttpServer::startServer()
                 execProcess(command_map.value(COMMAND), socket);
             } else {
                 readFile(info.url(), socket);
+                socket->close();
             }
-
-            socket->close();
         });
         connect(socket, &QTcpSocket::disconnected, [socket]{
             qDebug() << "HttpServer: disconnected: " << socket->peerAddress().toString() << socket->peerName() << socket->peerPort();
@@ -349,12 +348,14 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
         qDebug() << QString("Exec \"%1\" failed:").arg(command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
+        socket->close();
         onProcessFinished(process);
     });
 
     connect(process, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
             this, [this, socket, process] {
         socket->write(messagePackage("", "text/html", HttpInfo::NoError, process->readAll()));
+        socket->close();
         onProcessFinished(process);
     });
 
