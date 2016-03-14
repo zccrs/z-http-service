@@ -226,7 +226,7 @@ bool ZHttpServer::startServer()
             }
 
             if(command_map.value(ACTION) == ACTION_EXEC) {
-                execProcess(command_map.value(COMMAND), socket);
+                execProcess(QUrl::fromPercentEncoding(command_map.value(COMMAND)), socket);
             } else {
                 readFile(info.url(), socket);
                 socket->close();
@@ -344,7 +344,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
     QProcess *process = new QProcess(const_cast<ZHttpServer*>(this));
 
     connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
-            this, [this, socket, process, command] {
+            socket, [this, socket, process, command] {
         qDebug() << QString("Exec \"%1\" failed:").arg(sysroot + COMMAND_PATH + "/" + command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
@@ -353,7 +353,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
     });
 
     connect(process, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
-            this, [this, socket, process] {
+            socket, [this, socket, process] {
         const QByteArray &message = process->readAll();
 
         qDebug() << "execProcess finished, message:" << message;
