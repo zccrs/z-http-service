@@ -329,7 +329,12 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
         }
 
         if(file.open(QIODevice::ReadOnly)){
-            socket->write(messagePackage(file.readAll()));
+            fileInfo.setFile(file.fileName());
+
+            if(fileInfo.suffix() == "html" || fileInfo.suffix() == "xml")
+                socket->write(messagePackage(file.readAll(), "text/Html"));
+            else
+                socket->write(messagePackage(file.readAll()));
         }else{
             qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
             socket->write(messagePackage("", "text/html", HttpInfo::OtherError, file.errorString()));
