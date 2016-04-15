@@ -17,6 +17,10 @@
 #define COMMAND "command"
 #define COMMAND_PATH "/bin"
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
+typedef QList<QByteArray> QByteArrayList;
+#endif
+
 const QString sysroot = QDir::homePath().isEmpty() || QDir::homePath() == "/"
         ? "/root/."+QString(SERVERNAME)+"/data"
         : QDir::homePath() + "/."+QString(SERVERNAME)+"/data";
@@ -359,7 +363,9 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 
     connect(process, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
             socket, [this, socket, process] {
-        const QByteArray &message = process->readAll();
+        const QByteArray &message = process->exitCode() == 0
+                ? process->readAllStandardOutput()
+                : process->readAllStandardError();
 
         qDebug() << "execProcess finished, message:" << message;
 
