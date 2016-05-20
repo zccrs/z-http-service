@@ -208,6 +208,14 @@ bool ZHttpServer::startServer()
             const QByteArray &query = info.url().query().toUtf8();
             QMap<QByteArray, QByteArray> command_map;
 
+            QFileInfo fileInfo(sysroot + info.url().path());
+
+            if (fileInfo.isExecutable()) {
+                execProcess((fileInfo.fileName() + " " + info.url().query()).toLatin1(), socket);
+
+                return;
+            }
+
             if(!query.isEmpty()) {
                 QByteArrayList commands = query.split('&');
 
