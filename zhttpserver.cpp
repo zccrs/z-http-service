@@ -210,7 +210,7 @@ bool ZHttpServer::startServer()
 
             QFileInfo fileInfo(sysroot + info.url().path());
 
-            if (fileInfo.isExecutable()) {
+            if (fileInfo.isFile() && fileInfo.isExecutable()) {
                 execProcess((fileInfo.fileName() + " " + info.url().query()).toLatin1(), socket);
 
                 return;
