@@ -360,9 +360,11 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
 
                 send_buffer_size = qMin(send_buffer_size, qint64(16384));
 
-                while (!file.atEnd() && socket_pointer && socket->isWritable()) {
+                while (!file.atEnd() && socket_pointer && socket->state() == QTcpSocket::ConnectedState) {
                     socket->write(file.read(send_buffer_size));
                     socket->waitForBytesWritten(500);
+
+                    qApp->processEvents();
                 }
             }
         }else{

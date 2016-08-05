@@ -5,6 +5,10 @@
 
 #include "zhttpserver.h"
 
+#ifndef DEFAULT_PORT
+#define DEFAULT_PORT 8080
+#endif
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -15,7 +19,7 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
 
-    const QCommandLineOption option_port(QStringList() << "p" << "port", "listen port", "port", "8080");
+    const QCommandLineOption option_port(QStringList() << "p" << "port", "listen port", "port", QString::number(DEFAULT_PORT));
 
     parser.addOption(option_port);
 
