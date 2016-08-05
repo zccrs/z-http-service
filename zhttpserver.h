@@ -48,7 +48,7 @@ public:
     void setErrorString(const QString &str);
 
     QByteArray body() const;
-    void setBody(const QByteArray &body);
+    void setBody(const QByteArray &body, int bodyLength = -1);
 
     void clear();
 
@@ -89,7 +89,8 @@ private:
     QTcpServer *m_tcpServer;
 
     QByteArray messagePackage(QByteArray content, const QByteArray &content_type = "text/plain; charset=utf-8",
-                           HttpInfo::ErrorCode error_code = HttpInfo::NoError, const QString &error_message = "") const;
+                              HttpInfo::ErrorCode error_code = HttpInfo::NoError, const QString &error_message = QString(),
+                              qint64 contentLength = -1) const;
     QByteArray getErrorHtml(HttpInfo::ErrorCode error_code, const QString &error_message) const;
     QByteArray getJumpPackage(const QByteArray &target_path) const;
 

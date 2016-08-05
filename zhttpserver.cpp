@@ -7,11 +7,14 @@
 #include <QSettings>
 #include <QDebug>
 #include <QProcess>
+#include <QCoreApplication>
+#include <QPointer>
+#include <QThread>
 
 #include "zhttpserver.h"
 
 #define SERVERNAME "z-http"
-#define PORT 80
+#define PORT 8080
 #define ACTION "action"
 #define ACTION_EXEC "exec"
 #define COMMAND "command"
@@ -145,10 +148,10 @@ QByteArray HttpInfo::body() const
     return m_body;
 }
 
-void HttpInfo::setBody(const QByteArray &body)
+void HttpInfo::setBody(const QByteArray &body, int bodyLength)
 {
     m_body = body;
-    setRawHeader("Content-Length", QByteArray::number(m_body.length()));
+    setRawHeader("Content-Length", QByteArray::number(bodyLength == -1 ? m_body.length() : bodyLength));
 }
 
 void HttpInfo::clear()
@@ -240,8 +243,12 @@ bool ZHttpServer::startServer()
             if(command_map.value(ACTION) == ACTION_EXEC) {
                 execProcess(QUrl::fromPercentEncoding(command_map.value(COMMAND)), socket);
             } else {
+                QPointer<QTcpSocket> socket_pointer = socket;
+
                 readFile(info.url(), socket);
-                socket->close();
+
+                if (socket_pointer)
+                    socket->close();
             }
         });
         connect(socket, &QTcpSocket::disconnected, [socket]{
@@ -266,7 +273,8 @@ void ZHttpServer::onProcessFinished(QProcess *process) const
 }
 
 QByteArray ZHttpServer::messagePackage(QByteArray content, const QByteArray &content_type,
-                                       HttpInfo::ErrorCode error_code, const QString &error_message) const
+                                       HttpInfo::ErrorCode error_code, const QString &error_message,
+                                       qint64 contentLength) const
 {
     if(error_code != HttpInfo::NoError)
         content = getErrorHtml(error_code, error_message);
@@ -277,7 +285,7 @@ QByteArray ZHttpServer::messagePackage(QByteArray content, const QByteArray &con
     re.setErrorString(error_message);
     re.setRawHeader("Content-Type", content_type);
     re.setRawHeader("Connection", "Close");
-    re.setBody(content);
+    re.setBody(content, contentLength);
 
     return re.toReplyByteArray();
 }
@@ -343,10 +351,21 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
         if(file.open(QIODevice::ReadOnly)){
             fileInfo.setFile(file.fileName());
 
-            if(fileInfo.suffix() == "html" || fileInfo.suffix() == "xml")
+            if(fileInfo.suffix() == "html" || fileInfo.suffix() == "xml") {
                 socket->write(messagePackage(file.readAll(), "text/Html"));
-            else
-                socket->write(messagePackage(file.readAll()));
+            } else {
+                socket->write(messagePackage(file.read(64), "text/plain;charset=utf-8", HttpInfo::NoError, QString(), file.size()));
+
+                QPointer<QTcpSocket> socket_pointer = socket;
+                qint64 send_buffer_size = socket->socketOption(QTcpSocket::SendBufferSizeSocketOption).toLongLong();
+
+                send_buffer_size = qMin(send_buffer_size, qint64(16384));
+
+                while (!file.atEnd() && socket_pointer && socket->isWritable()) {
+                    socket->write(file.read(send_buffer_size));
+                    socket->waitForBytesWritten(500);
+                }
+            }
         }else{
             qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
             socket->write(messagePackage("", "text/html", HttpInfo::OtherError, file.errorString()));
