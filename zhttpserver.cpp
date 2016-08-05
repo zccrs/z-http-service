@@ -14,7 +14,6 @@
 #include "zhttpserver.h"
 
 #define SERVERNAME "z-http"
-#define PORT 8080
 #define ACTION "action"
 #define ACTION_EXEC "exec"
 #define COMMAND "command"
@@ -188,12 +187,12 @@ ZHttpServer::~ZHttpServer()
     m_tcpServer->close();
 }
 
-bool ZHttpServer::startServer()
+bool ZHttpServer::startServer(quint16 port)
 {
     if(m_tcpServer->isListening())
         return true;
 
-    if(!m_tcpServer->listen(QHostAddress::Any, PORT)){
+    if(!m_tcpServer->listen(QHostAddress::Any, port)){
         qDebug() << "HttpServer: error: " << m_tcpServer->errorString();
         return false;
     }else{

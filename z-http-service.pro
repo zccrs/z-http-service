@@ -13,7 +13,7 @@ CONFIG   += console c++11
 CONFIG   -= app_bundle
 
 TEMPLATE = app
-
+VERSION = 1.0
 
 SOURCES += main.cpp \
     zhttpserver.cpp

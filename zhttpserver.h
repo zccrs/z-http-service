@@ -79,7 +79,7 @@ public:
     explicit ZHttpServer(QObject *parent = 0);
     ~ZHttpServer();
 
-    bool startServer();
+    bool startServer(quint16 port);
     void stopServer();
 
 private slots:
