@@ -212,7 +212,7 @@ bool ZHttpServer::startServer(quint16 port)
             QFileInfo fileInfo(sysroot + info.url().path());
 
             if (fileInfo.isFile() && fileInfo.isExecutable()) {
-                execProcess((fileInfo.fileName() + " " + info.url().query()).toLatin1(), socket);
+                execProcess((fileInfo.fileName() + " " + info.url().query(QUrl::FullyDecoded)).toLatin1(), socket);
 
                 return;
             }
