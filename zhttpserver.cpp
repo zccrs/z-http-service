@@ -193,19 +193,19 @@ bool ZHttpServer::startServer(quint16 port)
         return true;
 
     if(!m_tcpServer->listen(QHostAddress::Any, port)){
-        qDebug() << "HttpServer: error: " << m_tcpServer->errorString();
+        qWarning() << "HttpServer: error: " << m_tcpServer->errorString();
         return false;
     }else{
-        qDebug() << "HttpServer: OK";
+        qWarning() << "HttpServer: OK";
     }
     connect(m_tcpServer, &QTcpServer::newConnection, [this]{
         QTcpSocket *socket = m_tcpServer->nextPendingConnection();
-        qDebug() << "HttpServer: new connect:" << socket->peerAddress().toString() << socket->peerName() << socket->peerPort();
+        qWarning() << "HttpServer: new connect:" << socket->peerAddress().toString() << socket->peerName() << socket->peerPort();
 
         connect(socket, &QTcpSocket::readyRead, [socket, this]{
             HttpInfo info(socket->readAll());
 
-            qDebug() << info.url();
+            qWarning() << info.url();
 
             const QByteArray &query = info.url().query().toUtf8();
             QMap<QByteArray, QByteArray> command_map;
@@ -221,7 +221,7 @@ bool ZHttpServer::startServer(quint16 port)
             if(!query.isEmpty()) {
                 QByteArrayList commands = query.split('&');
 
-                qDebug() << "HttpServer: command:" << commands;
+                qWarning() << "HttpServer: command:" << commands;
 
                 for(const QByteArray &comm : commands) {
                     if(comm.isEmpty())
@@ -251,7 +251,7 @@ bool ZHttpServer::startServer(quint16 port)
             }
         });
         connect(socket, &QTcpSocket::disconnected, [socket]{
-            qDebug() << "HttpServer: disconnected: " << socket->peerAddress().toString() << socket->peerName() << socket->peerPort();
+            qWarning() << "HttpServer: disconnected: " << socket->peerAddress().toString() << socket->peerName() << socket->peerPort();
             socket->deleteLater();
         });
     });
@@ -340,7 +340,7 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
             }
         }
 
-        qDebug() << "Open file:" << file.fileName();
+        qWarning() << "Open file:" << file.fileName();
 
         if(!file.exists()){
             socket->write(messagePackage("", "text/html",  HttpInfo::FileNotFoundError, "File Not Found"));
@@ -368,7 +368,7 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
                 }
             }
         }else{
-            qDebug() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
+            qWarning() << "Open file failed:" << file.fileName() << "error:" << file.errorString();
             socket->write(messagePackage("", "text/html", HttpInfo::OtherError, file.errorString()));
         }
     }while(false);
@@ -376,13 +376,13 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
 
 void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 {
-    qDebug() << "execProcess:" << command;
+    qWarning() << "execProcess:" << command;
 
     QProcess *process = new QProcess(const_cast<ZHttpServer*>(this));
 
     connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
             socket, [this, socket, process, command] {
-        qDebug() << QString("Exec \"%1\" failed:").arg(sysroot + COMMAND_PATH + "/" + command) << process->errorString();
+        qWarning() << QString("Exec \"%1\" failed:").arg(sysroot + COMMAND_PATH + "/" + command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
         socket->close();
@@ -395,7 +395,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
                 ? process->readAllStandardOutput()
                 : process->readAllStandardError();
 
-        qDebug() << "execProcess finished, message:" << message;
+        qWarning() << "execProcess finished, message:" << message;
 
         socket->write(messagePackage(message));
         socket->close();
