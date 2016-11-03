@@ -17,7 +17,6 @@
 #define ACTION "action"
 #define ACTION_EXEC "exec"
 #define COMMAND "command"
-#define COMMAND_PATH "/bin"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 4, 0)
 typedef QList<QByteArray> QByteArrayList;
@@ -382,7 +381,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 
     connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
             socket, [this, socket, process, command] {
-        qWarning() << QString("Exec \"%1\" failed:").arg(sysroot + COMMAND_PATH + "/" + command) << process->errorString();
+        qWarning() << QString("Exec \"%1\" failed:").arg(sysroot + "/" + command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
         socket->close();
@@ -402,6 +401,6 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
         onProcessFinished(process);
     });
 
-    process->start(sysroot + COMMAND_PATH + "/" + command, QProcess::ReadOnly);
+    process->start(sysroot + "/" + command, QProcess::ReadOnly);
 }
 
