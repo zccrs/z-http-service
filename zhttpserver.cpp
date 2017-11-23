@@ -10,6 +10,7 @@
 #include <QCoreApplication>
 #include <QPointer>
 #include <QThread>
+#include <QMimeDatabase>
 
 #include "zhttpserver.h"
 
@@ -352,12 +353,17 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
             if(fileInfo.suffix() == "html" || fileInfo.suffix() == "xml") {
                 socket->write(messagePackage(file.readAll(), "text/Html"));
             } else {
-                socket->write(messagePackage(file.read(64), "text/plain;charset=utf-8", HttpInfo::NoError, QString(), file.size()));
+                QMimeDatabase mime_db;
+                const QMimeType &file_type = mime_db.mimeTypeForFileNameAndData(file.fileName(), &file);
 
                 QPointer<QTcpSocket> socket_pointer = socket;
                 qint64 send_buffer_size = socket->socketOption(QTcpSocket::SendBufferSizeSocketOption).toLongLong();
 
                 send_buffer_size = qMin(send_buffer_size, qint64(16384));
+
+                file.seek(0);
+                socket->write(messagePackage(file.read(send_buffer_size), QString("%1;charset=utf-8").arg(file_type.name()).toUtf8(),
+                                             HttpInfo::NoError, QString(), file.size()));
 
                 while (!file.atEnd() && socket_pointer && socket->state() == QTcpSocket::ConnectedState) {
                     socket->write(file.read(send_buffer_size));
