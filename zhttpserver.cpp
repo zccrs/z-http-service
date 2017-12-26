@@ -23,10 +23,6 @@
 typedef QList<QByteArray> QByteArrayList;
 #endif
 
-const QString sysroot = QDir::homePath().isEmpty() || QDir::homePath() == "/"
-        ? "/root/."+QString(SERVERNAME)+"/data"
-        : QDir::homePath() + "/."+QString(SERVERNAME)+"/data";
-
 HttpInfo::HttpInfo(const QByteArray &data, PackageType type):
     m_httpVersion("HTTP/1.1"),
     m_errorCode(NoError)
@@ -180,6 +176,7 @@ ZHttpServer::ZHttpServer(QObject *parent) :
     QObject(parent),
     m_tcpServer(new QTcpServer(this))
 {
+    qDebug() << rootPath();
 }
 
 ZHttpServer::~ZHttpServer()
@@ -273,11 +270,28 @@ void ZHttpServer::onProcessFinished(QProcess *process) const
 
 QString ZHttpServer::rootPath()
 {
+    static thread_local QString root;
+
+    if (!root.isEmpty())
+        return root;
+
+    static QString path_format = QDir::homePath().isEmpty() || QDir::homePath() == "/"
+            ? "/root/." SERVERNAME "/%1"
+            : QDir::homePath() + "/." SERVERNAME "/%1";
+
     if (qEnvironmentVariableIsEmpty("ZHTTP_ROOT_PATH")) {
-        return sysroot;
+        return path_format.arg("data");
+    } else {
+        root = QString::fromUtf8(qgetenv("ZHTTP_ROOT_PATH"));
+
+        if (!root.startsWith("/")
+                && !root.startsWith("~/")
+                && !root.startsWith("./")) {
+            root = path_format.arg(root);
+        }
     }
 
-    return QString::fromUtf8(qgetenv("ZHTTP_ROOT_PATH"));
+    return root;
 }
 
 QByteArray ZHttpServer::messagePackage(QByteArray content, const QByteArray &content_type,

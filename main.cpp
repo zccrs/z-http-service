@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
 
     const QCommandLineOption option_port(QStringList() << "p" << "port", "listen port", "port", QString::number(DEFAULT_PORT));
-    const QCommandLineOption option_root(QStringList() << "r" << "root", "work directory");
+    const QCommandLineOption option_root(QStringList() << "r" << "root", "work directory.", "path");
 
     parser.addOption(option_port);
     parser.addOption(option_root);

@@ -4,7 +4,7 @@ After=network.target
 ConditionPathExists=/
 [Service]
 Type=simple
-ExecStart=/usr/bin/z-http-service -p 80
+ExecStart=/usr/bin/z-http-service -p 80 -r %i
 TimeoutSec=0
 RemainAfterExit=yes
 [Install]
