@@ -210,7 +210,7 @@ bool ZHttpServer::startServer(quint16 port)
             const QByteArray &query = info.url().query().toUtf8();
             QMap<QByteArray, QByteArray> command_map;
 
-            QFileInfo fileInfo(sysroot + info.url().path());
+            QFileInfo fileInfo(rootPath() + info.url().path());
 
             if (fileInfo.isFile() && fileInfo.isExecutable()) {
                 execProcess((fileInfo.fileName() + " " + info.url().query(QUrl::FullyDecoded)).toLatin1(), socket);
@@ -271,6 +271,15 @@ void ZHttpServer::onProcessFinished(QProcess *process) const
     process->deleteLater();
 }
 
+QString ZHttpServer::rootPath()
+{
+    if (qEnvironmentVariableIsEmpty("ZHTTP_ROOT_PATH")) {
+        return sysroot;
+    }
+
+    return QString::fromUtf8(qgetenv("ZHTTP_ROOT_PATH"));
+}
+
 QByteArray ZHttpServer::messagePackage(QByteArray content, const QByteArray &content_type,
                                        HttpInfo::ErrorCode error_code, const QString &error_message,
                                        qint64 contentLength) const
@@ -308,10 +317,10 @@ QByteArray ZHttpServer::getJumpPackage(const QByteArray &target_path) const
 
 void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
 {
-    QFileInfo fileInfo(sysroot + url.path());
+    QFileInfo fileInfo(rootPath() + url.path());
 
     do{
-        if(!fileInfo.absoluteFilePath().contains(sysroot)){
+        if(!fileInfo.absoluteFilePath().contains(rootPath())){
             socket->write(messagePackage("", "text/html",  HttpInfo::UnauthorizedAccessError, "Unauthorized Access"));
             break;
         }
@@ -330,7 +339,7 @@ void ZHttpServer::readFile(QUrl url, QTcpSocket *socket) const
                 QDir dir(fileInfo.absoluteFilePath());
 
                 if(dir.cd(jump)){
-                    url.setPath(dir.absolutePath().replace(sysroot, ""));
+                    url.setPath(dir.absolutePath().replace(rootPath(), ""));
                     socket->write(getJumpPackage(url.toString().toUtf8()));
                     break;
                 }else{
@@ -387,7 +396,7 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
 
     connect(process, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
             socket, [this, socket, process, command] {
-        qWarning() << QString("Exec \"%1\" failed:").arg(sysroot + "/" + command) << process->errorString();
+        qWarning() << QString("Exec \"%1\" failed:").arg(rootPath() + "/" + command) << process->errorString();
 
         socket->write(messagePackage("", "text/html", HttpInfo::OtherError, process->errorString()));
         socket->close();
@@ -407,6 +416,6 @@ void ZHttpServer::execProcess(const QString &command, QTcpSocket *socket) const
         onProcessFinished(process);
     });
 
-    process->start(sysroot + "/" + command, QProcess::ReadOnly);
+    process->start(rootPath() + "/" + command, QProcess::ReadOnly);
 }
 

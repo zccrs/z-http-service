@@ -88,6 +88,8 @@ private slots:
 private:
     QTcpServer *m_tcpServer;
 
+    static QString rootPath();
+
     QByteArray messagePackage(QByteArray content, const QByteArray &content_type = "text/plain; charset=utf-8",
                               HttpInfo::ErrorCode error_code = HttpInfo::NoError, const QString &error_message = QString(),
                               qint64 contentLength = -1) const;
